@@ -1,4 +1,4 @@
-describe('find()', function() {
+describe('find() -- simple usage:', function() {
   var collection;
 
   beforeEach(function () {
@@ -13,6 +13,11 @@ describe('find()', function() {
       sameCollection: function(expected) {
         var c1 = [].slice.apply(this.actual);
         var c2 = [].slice.apply(expected);
+        return jasmine.getEnv().equals_(c1, c2);
+      },
+      sameCollectionByItems: function() {
+        var c1 = [].slice.apply(this.actual);
+        var c2 = [].slice.apply(arguments);
         return jasmine.getEnv().equals_(c1, c2);
       }
     });
@@ -42,16 +47,28 @@ describe('find()', function() {
     expect(result1).sameCollection(result2);
   });
 
-  it('accepts an object with value-restrictions on its fields', function() {
+  it('accepts value restricted specifications (key=value)', function() {
     var result = collection.find({ z: true });
     expect(result).sameCollection(collection.slice(0, 2));
   });
 
-  it('accepts the restriction key=null following Mongo specification',
+  it('in value restricted specs, if the item has not the key, the ' +
+     'restriction does not apply',
      function () {
       var result = collection.find({ y: null });
-      expect(result).sameCollection(collection.slice(2, 4))
+      var result2 = collection.find({ nonexist: 'anything' });
+      expect(result).sameCollection(collection.slice(2, 4));
+      expect(result2).sameCollection(collection);
      }
   );
 
+  it('accepts the operator $exists with a boolean to check for the existence ' +
+     'of a key',
+     function () {
+      var result = collection.find({ y: { $exists: true } });
+      var result2 = collection.find({ y: { $exists: false } });
+      expect(result).sameCollection(collection.slice(0, 3));
+      expect(result2).sameCollection(collection.slice(3, 4));
+     }
+  );
 });
