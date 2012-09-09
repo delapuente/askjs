@@ -1,23 +1,24 @@
 describe('the $type operator with a number as parameter:', function() {
-  var C;
+  var ArrayLike = function ArrayLike() {
+    this.length = 0;
+  }
+
+  var C = [
+    { sample: 1 },
+    { sample: Math.PI },
+    { sample: "string"},
+    { sample: {} },
+    { sample: [] },
+    { sample: true },
+    { sample: new Date(1990, 10, 5) },
+    { sample: null },
+    { sample: /regexp/ },
+    { sample: true },
+    { sample: function () { return 'this is a function'; }},
+    { sample: 4294967296 } // 2^32
+  ];
 
   beforeEach(function () {
-    C = [
-      { x: 1, sample: 1, z: true },
-      { x: 2, sample: Math.PI, z: true },
-      { x: 3, sample: "string", z: true },
-      { x: 4, sample: {}, z: false },
-      { x: 5, sample: [], z: false },
-      { x: 6, sample: true, z: false },
-      { x: 7, sample: new Date(1990, 10, 5), z: false },
-      { x: 8, sample: null, z: false },
-      { x: 9, sample: /regexp/, z: false },
-      { x: 10, sample: true, z: false },
-      { x: 11, sample: function () { return 'this is a function'; }, z: false },
-      { x: 12, sample: 8589934592, z: false },
-      { x: 13, z: false }
-    ];
-
     this.addMatchers({
       sameCollection: function(expected) {
         var c1 = [].slice.apply(this.actual);
@@ -79,4 +80,102 @@ describe('the $type operator with a number as parameter:', function() {
        );
      }
   );
+
+  it('accepts the number 8, boolean ',
+     function() {
+       expect(
+         C.find({ sample: { $type: 8 } })
+       )
+       .sameCollectionByItems(
+         C[5],
+         C[9]
+       );
+     }
+  );
+
+  it('accepts the number 9, date ',
+     function() {
+       expect(
+         C.find({ sample: { $type: 9 } })
+       )
+       .sameCollectionByItems(
+         C[6]
+       );
+     }
+  );
+
+  it('accepts the number 10, null ',
+     function() {
+       expect(
+         C.find({ sample: { $type: 10 } })
+       )
+       .sameCollectionByItems(
+         C[7]
+       );
+     }
+  );
+
+  it('accepts the number 11, regular expression ',
+     function() {
+       expect(
+         C.find({ sample: { $type: 11 } })
+       )
+       .sameCollectionByItems(
+         C[8]
+       );
+     }
+  );
+
+  it('accepts the number 13, JavaScript code',
+     function() {
+       expect(
+         C.find({ sample: { $type: 13 } })
+       )
+       .sameCollectionByItems(
+         C[10]
+       );
+     }
+  );
+
+  it('accepts the number 15, JavaScript code with scope ',
+     function() {
+       expect(
+         C.find({ sample: { $type: 15 } })
+       )
+       .sameCollectionByItems(
+         C[10]
+       );
+     }
+  );
+
+  it('accepts the number 16, 32-bit integer ',
+     function() {
+       expect(
+         C.find({ sample: { $type: 16 } })
+       )
+       .sameCollectionByItems(
+         C[0]
+       );
+     }
+  );
+
+  it('accepts the number 18, 64-bit (really 52-bit) integer ',
+     function() {
+       expect(
+         C.find({ sample: { $type: 18 } })
+       )
+       .sameCollectionByItems(
+         C[0],
+         C[11]
+       );
+     }
+  );
+
+  it('does not support 7, object id',
+     function() {
+       function f() { C.find({ sample: { $type: 7 } }); }
+       expect(f).toThrow();
+     }
+  );
+
 });

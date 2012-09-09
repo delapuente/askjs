@@ -4,6 +4,9 @@ var ask = (function(undefined) {
 
   'use strict'
 
+  var MAX_INT32 = 4294967296; // 2^32
+  var MAX_INT52 = 9007199254740992; // 2^52
+
   function AskException(message, name) {
     this.name = name || 'AskException';
     this.message = message || '';
@@ -15,6 +18,20 @@ var ask = (function(undefined) {
     AskException.call(this, description, 'BadArgument');
   }
   BadArgument.prototype = new AskException();
+
+  function NotSupported(subject) {
+    description = 
+      'Feature not supported: ' + subject;
+    AskException.call(this, description, 'NotSupported');
+  }
+  NotSupported.prototype = new AskException();
+
+  function _extend(obj) {
+    for (var i = 1, current; current = arguments[i]; i++)
+      for (var key in current) if (current.hasOwnProperty(key))
+        obj[key] = current[key];
+    return obj;
+  }
 
   // Transform a query object into a real query object
   // See:
@@ -64,7 +81,7 @@ var ask = (function(undefined) {
   }
 
   // Collection of types
-  var TYPES = {
+  var CURRENT_TYPES, DEFAULT_TYPES = {
     // minkey: unsupported
     '-1': false,
 
@@ -97,27 +114,57 @@ var ask = (function(undefined) {
     '5': false,
 
     // object id: unsupported
-    '7': true,
+    '7': false,
 
     // boolean
-    '8': true,
-    '9': true,
+    '8': function (value) {
+      return typeof value === 'boolean';
+    },
+
+    // date
+    '9': function (value) {
+      return value instanceof Date;
+    },
 
     // null
     '10': function (value) {
       return value === null;
     },
 
-    '11': true,
-    '12': true,
-    '13': true,
+    // regular expression
+    '11': function (value) {
+      return value instanceof RegExp;
+    },
+
+    // code: ~ function
+    '13': function (value) {
+      return typeof value === 'function' || value instanceof Function;
+    },
 
     // symbol: unsupported
     '14': false,
-    '15': true,
-    '16': true,
-    '17': true,
-    '18': true,
+
+    // code with scope: ~ function
+    '15': function (value) {
+      return typeof value === 'function' || value instanceof Function;
+    },
+
+    // 32-bit int
+    '16': function (value) {
+      return typeof value === 'number' &&
+              parseInt(value) === parseFloat(value) &&
+              -MAX_INT32 < value && value < MAX_INT32;
+    },
+
+     // timestamps: unsupported
+    '17': false,
+
+    // 64-bit int
+    '18': function (value) {
+      return typeof value === 'number' &&
+              parseInt(value) === parseFloat(value) &&
+              -MAX_INT52 < value && value < MAX_INT52;
+    },
 
     // minkey: unsupported
     '255': false,
@@ -151,19 +198,22 @@ var ask = (function(undefined) {
 
     $type: function (item, key, spec) {
       var parameter = spec.$type;
-      if (typeof parameter !== 'number' || TYPES[parameter] === undefined )
+      if (typeof parameter !== 'number' || CURRENT_TYPES[parameter] === undefined )
         throw new BadArgument(
           '$type',
-          '"number" from 1 to 18 (in addition with -1, 255 and 127) expected'
+          '"number" in the set {1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 13, 14, 15, ' +
+          '16, 17, 18, -1, 255 and 127} expected'
         );
 
-      var matcher = TYPES[parameter];
-      if (matcher === false)
-        return false;
+      var typetest = CURRENT_TYPES[parameter];
+      if (typetest === false)
+        throw new Bad argument(
+          '$type',
+          parameter + ' not supported'
+        );
 
-      else if (typeof matcher === 'function') {
-        console.log('here');
-        return matcher(item[key]);
+      else if (typeof typetest === 'function') {
+        return typetest(item[key]);
       }
     }
   };
@@ -202,7 +252,16 @@ var ask = (function(undefined) {
     return arraylike;
   }
 
+  // Set type tests
+  function _types(typetests) {
+    typetests = typetests || {};
+    CURRENT_TYPES = _extend({}, DEFAULT_TYPES, typetests);
+  }
+
+  _types();
+
   return {
-    mongify: _mongify
+    mongify: _mongify,
+    types: _types
   }
 }());

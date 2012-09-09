@@ -1,23 +1,13 @@
 describe('find() -- simple usage:', function() {
-  var C;
+  var C = [
+    {x: 1, y: 'A', z: true},
+    {x: 2, y: 'B', z: true},
+    {x: 3, y: 'C', z: true},
+    {x: 4, y: null, z: false},
+    {x: 5, z: false}
+  ];
 
   beforeEach(function () {
-    C = [
-      { x: 1, sample: 1, z: true },
-      { x: 2, sample: Math.PI, z: true },
-      { x: 3, sample: "string", z: true },
-      { x: 4, sample: {}, z: false },
-      { x: 5, sample: [], z: false },
-      { x: 6, sample: true, z: false },
-      { x: 7, sample: new Date(1990, 10, 5), z: false },
-      { x: 8, sample: null, z: false },
-      { x: 9, sample: /regexp/, z: false },
-      { x: 10, sample: true, z: false },
-      { x: 11, sample: function () { return 'this is a function'; }, z: false },
-      { x: 12, sample: 8589934592, z: false },
-      { x: 13, z: false }
-    ];
-
     this.addMatchers({
       sameCollection: function(expected) {
         var c1 = [].slice.apply(this.actual);
@@ -64,11 +54,11 @@ describe('find() -- simple usage:', function() {
   it('in value restricted specs, if the item has not the key, the ' +
      'restriction does not apply',
      function () {
-       var result = C.find({ sample: null });
+       var result = C.find({ y: null });
        var result2 = C.find({ nonexist: 'anything' });
        expect(result).sameCollectionByItems(
-        C[7], 
-        C[12]
+        C[3], 
+        C[4]
        );
        expect(result2).sameCollection(C);
      }
@@ -81,10 +71,10 @@ describe('find() -- simple usage:', function() {
          C.find({ y: { $exists: 1 } }) 
        }).toThrow();
 
-       var result = C.find({ sample: { $exists: true } });
-       var result2 = C.find({ sample: { $exists: false } });
-       expect(result).sameCollection(C.slice(0, 12));
-       expect(result2).sameCollectionByItems(C[12]);
+       var result = C.find({ y: { $exists: true } });
+       var result2 = C.find({ y: { $exists: false } });
+       expect(result).sameCollection(C.slice(0, 4));
+       expect(result2).sameCollectionByItems(C[4]);
      }
   );
 
