@@ -176,10 +176,10 @@ var ask = (function(undefined) {
   // Collection of tests by type of specification
   var TESTS = {
     value: function (item, key, spec) {
-      if (key in item && item[key] !== spec)
-        return false;
+      if (Array.isArray(item[key]))
+        return item[key].indexOf(spec) !== -1;
 
-      return true;
+      return (spec === null && !(key in item)) || (spec === item[key]);
     },
 
     $exists: function (item, key, spec) {
@@ -207,7 +207,7 @@ var ask = (function(undefined) {
 
       var typetest = CURRENT_TYPES[parameter];
       if (typetest === false)
-        throw new Bad argument(
+        throw new BadArgument(
           '$type',
           parameter + ' not supported'
         );

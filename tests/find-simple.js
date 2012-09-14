@@ -4,7 +4,9 @@ describe('find() -- simple usage:', function() {
     {x: 2, y: 'B', z: true},
     {x: 3, y: 'C', z: true},
     {x: 4, y: null, z: false},
-    {x: 5, z: false}
+    {x: 5, z: false},
+    {x: 6, color: "red", z: false},
+    {x: 7, color: ["red", "green", "blue"], z: false}
   ];
 
   beforeEach(function () {
@@ -51,16 +53,22 @@ describe('find() -- simple usage:', function() {
     expect(result).sameCollection(C.slice(0, 3));
   });
 
-  it('in value restricted specs, if the item has not the key, the ' +
-     'restriction does not apply',
+  it('in value restricted specs, when key is an array, the search check all ' +
+     'values within the array', function() {
+    var result = C.find({ color: "red" });
+    expect(result).sameCollection(C.slice(5, 7));
+  });
+
+  it('in value restricted specs, looking for null inlcudes those objects ' +
+     'without the key',
      function () {
        var result = C.find({ y: null });
-       var result2 = C.find({ nonexist: 'anything' });
        expect(result).sameCollectionByItems(
         C[3], 
-        C[4]
+        C[4],
+        C[5],
+        C[6]
        );
-       expect(result2).sameCollection(C);
      }
   );
 
@@ -74,7 +82,7 @@ describe('find() -- simple usage:', function() {
        var result = C.find({ y: { $exists: true } });
        var result2 = C.find({ y: { $exists: false } });
        expect(result).sameCollection(C.slice(0, 4));
-       expect(result2).sameCollectionByItems(C[4]);
+       expect(result2).sameCollection(C.slice(4));
      }
   );
 
