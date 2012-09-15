@@ -72,15 +72,31 @@ describe('find() -- simple usage:', function() {
      }
   );
 
-  it('accepts the operator $exists with a boolean to check for the existence ' +
-     'of a key',
+  it('accepts the operator $exists with a falsy / truthty to check for the' + 
+     'existence of a key. For Mongo query, the empty string is true',
      function () {
-       expect(function () { 
-         C.find({ y: { $exists: 1 } }) 
-       }).toThrow();
-
        var result = C.find({ y: { $exists: true } });
        var result2 = C.find({ y: { $exists: false } });
+       expect(result).sameCollection(C.slice(0, 4));
+       expect(result2).sameCollection(C.slice(4));
+
+       result = C.find({ y: { $exists: 1 } });
+       result2 = C.find({ y: { $exists: 0 } });
+       expect(result).sameCollection(C.slice(0, 4));
+       expect(result2).sameCollection(C.slice(4));
+
+       result = C.find({ y: { $exists: "" } });
+       result2 = C.find({ y: { $exists: null } });
+       expect(result).sameCollection(C.slice(0, 4));
+       expect(result2).sameCollection(C.slice(4));
+
+       result = C.find({ y: { $exists: {} } });
+       result2 = C.find({ y: { $exists: 0 } });
+       expect(result).sameCollection(C.slice(0, 4));
+       expect(result2).sameCollection(C.slice(4));
+
+       result = C.find({ y: { $exists: [] } });
+       result2 = C.find({ y: { $exists: 0 } });
        expect(result).sameCollection(C.slice(0, 4));
        expect(result2).sameCollection(C.slice(4));
      }

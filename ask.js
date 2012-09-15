@@ -26,6 +26,25 @@ var ask = (function(undefined) {
   }
   NotSupported.prototype = new AskException();
 
+  // Check the correct type of a parameter and if so, check the value belongs
+  // to a proper set of values too.
+  function _assertParameter(operator, parameter, type, values) {
+    var assertion = true;
+    var description = '"' + parameter + '"' + ' expected to be "' + type + '"';
+
+    if (typeof parameter !== type) {
+      assertion = false;
+    }
+
+    else if (values !== undefined && values[parameter] === undefined) {
+      assertion = false;
+      description += ' in the set ' + JSON.stringify(Object.keys(values));
+    }
+
+    if (!assertion)
+      throw new BadArgument(operator, description);
+  }
+
   function _extend(obj) {
     for (var i = 1, current; current = arguments[i]; i++)
       for (var key in current) if (current.hasOwnProperty(key))
@@ -49,35 +68,15 @@ var ask = (function(undefined) {
   }
 
   // Return the type of the specification. Possible types are:
-  //  + $exists:
-  //  + $type
-  //  + object:
-  //  + operator:
-  //  + value:
-  function _getSpecType(spec) {
+  //  + value
+  //  + specification
+  function _getSpecMode(spec) {
 
     // null is a value more than an object
     if (typeof spec !== 'object' || spec === null)
       return 'value';
 
-    // look for operator
-    if (spec !== null) {
-      for (var key in spec) {
-
-        if (key[0] === '$') {
-          switch(key) {
-            case '$exists':
-            case '$type':
-              return key;
-
-            default:
-              return 'operator';
-          }
-        }
-      }
-    }
-
-    return 'object';
+    return 'specification';
   }
 
   // Collection of types
@@ -175,35 +174,22 @@ var ask = (function(undefined) {
 
   // Collection of tests by type of specification
   var TESTS = {
-    value: function (item, key, spec) {
-      if (Array.isArray(item[key]))
-        return item[key].indexOf(spec) !== -1;
 
-      return (spec === null && !(key in item)) || (spec === item[key]);
-    },
+    $exists: function (item, key, parameter) {
+      // XXX: Mongo admits falsies and truthies and, even more, the empty
+      // string is a truthy.
+      if (parameter === '')
+        parameter = true;
 
-    $exists: function (item, key, spec) {
-      // TODO: Check if Mongo admits falsies and truthies
-      var parameter = spec.$exists;
-      if (typeof parameter !== 'boolean')
-        throw new BadArgument(
-          '$exists',
-          '"boolean" expected (no truthies nor falsies allowed.)'
-        );
+      parameter = !!parameter; // normalize to boolean
 
       var shouldExist = (parameter === true);
       return shouldExist ?
               item[key] !== undefined : item[key] === undefined;
     },
 
-    $type: function (item, key, spec) {
-      var parameter = spec.$type;
-      if (typeof parameter !== 'number' || CURRENT_TYPES[parameter] === undefined )
-        throw new BadArgument(
-          '$type',
-          '"number" in the set {1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 13, 14, 15, ' +
-          '16, 17, 18, -1, 255 and 127} expected'
-        );
+    $type: function (item, key, parameter) {
+      _assertParameter('$type', parameter, 'number', CURRENT_TYPES);
 
       var typetest = CURRENT_TYPES[parameter];
       if (typetest === false)
@@ -216,18 +202,42 @@ var ask = (function(undefined) {
         return typetest(item[key]);
       }
     }
+
+  }
+
+  var MODES = {
+    value: function (item, key, value) {
+      if (Array.isArray(item[key]))
+        return item[key].indexOf(value) !== -1;
+
+      return (value === null && !(key in item)) || (value === item[key]);
+    },
+
+    specification: function (item, key, spec) {
+      for (var operator in spec) {
+        var test = TESTS[operator];
+        if (typeof test !== 'function')
+          throw new AskException('Operator "' + operator + '" not (yet)' +
+                                  ' supported');
+
+        if (!test(item, key, spec[operator]))
+          return false;
+      }
+      return true;
+    }
+
   };
 
   // General method to test objects.
   // Determining the type of the spec we can select the proper test.
   function _pass(item, key, spec) {
-    var type = _getSpecType(spec);
-    var test = TESTS[type];
-    if (typeof test !== 'function')
+    var mode = _getSpecMode(spec);
+    var handler = MODES[mode];
+    if (typeof handler !== 'function')
       throw new AskException('Specification "' + JSON.stringify(spec) +
-                               '" not yet supported');
+                               '" not supported');
 
-    return test(item, key, spec);
+    return handler(item, key, spec);
   }
 
   // Point of entry for Mongo queries
