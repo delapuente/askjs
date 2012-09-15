@@ -20,7 +20,8 @@ collection.find( { z: false } );
 
 At the moment, very basic features are supported:
 
-  + `{ key: value }` with simple values (numbers, strings, dates but no arrays nor other objects). See [Mongo reference about query language](http://www.mongodb.org/display/DOCS/Mongo+Query+Language).
+  + `{ key: value }` with simple values. See [Mongo reference about query language](http://www.mongodb.org/display/DOCS/Mongo+Query+Language).
+  + `{ key: null }` where `null` means both checking for equality or non existence.
   + `$exists` operator. See [Mongo reference about $exists](http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24exists) operator.
   + `$type` operator. See [Mongo table about datatypes](http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24type) and [Mongo reference about types](http://www.mongodb.org/display/DOCS/Data+Types+and+Conventions) and, **please, please, please**, read the follwing notes:
 
@@ -68,3 +69,5 @@ At the moment, very basic features are supported:
     // This reset type tests to default ones
     ask.types();
     ```
+
+  + `$gt`, `$gte`, `$lt`, `$lte` operators. See [Mongo reference about <, <=, >, >=](http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%3C%2C%3C%3D%2C%3E%2C%3E%3D) operators.

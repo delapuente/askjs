@@ -201,8 +201,39 @@ var ask = (function(undefined) {
       else if (typeof typetest === 'function') {
         return typetest(item[key]);
       }
-    }
+    },
 
+    $gt: function (item, key, parameter) {
+      var value = item[key];
+      if (typeof value !== typeof parameter)
+        return false;
+
+      return item[key] > parameter;
+    },
+
+    $gte: function (item, key, parameter) {
+      var value = item[key];
+      if (typeof value !== typeof parameter)
+        return false;
+
+      return item[key] >= parameter;
+    },
+
+    $lt: function (item, key, parameter) {
+      var value = item[key];
+      if (typeof value !== typeof parameter)
+        return false;
+
+      return item[key] < parameter;
+    },
+
+    $lte: function (item, key, parameter) {
+      var value = item[key];
+      if (typeof value !== typeof parameter)
+        return false;
+
+      return item[key] <= parameter;
+    }
   }
 
   var MODES = {
