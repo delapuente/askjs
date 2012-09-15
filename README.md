@@ -21,7 +21,7 @@ collection.find( { z: false } );
 At the moment, very basic features are supported:
 
   + `{ key: value }` with simple values. See [Mongo reference about query language](http://www.mongodb.org/display/DOCS/Mongo+Query+Language).
-  + `{ key: null }` where `null` means both checking for equality or non existence.
+  + `{ key: null }` where `null` means both checking for [equality or non existence](http://www.mongodb.org/display/DOCS/Querying+and+nulls).
   + `$exists` operator. See [Mongo reference about $exists](http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24exists) operator.
   + `$type` operator. See [Mongo table about datatypes](http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24type) and [Mongo reference about types](http://www.mongodb.org/display/DOCS/Data+Types+and+Conventions) and, **please, please, please**, read the follwing notes:
 
