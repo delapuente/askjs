@@ -208,7 +208,7 @@ var ask = (function(undefined) {
       if (typeof value !== typeof parameter)
         return false;
 
-      return item[key] > parameter;
+      return value > parameter;
     },
 
     $gte: function (item, key, parameter) {
@@ -216,7 +216,7 @@ var ask = (function(undefined) {
       if (typeof value !== typeof parameter)
         return false;
 
-      return item[key] >= parameter;
+      return value >= parameter;
     },
 
     $lt: function (item, key, parameter) {
@@ -224,7 +224,7 @@ var ask = (function(undefined) {
       if (typeof value !== typeof parameter)
         return false;
 
-      return item[key] < parameter;
+      return value < parameter;
     },
 
     $lte: function (item, key, parameter) {
@@ -232,7 +232,27 @@ var ask = (function(undefined) {
       if (typeof value !== typeof parameter)
         return false;
 
-      return item[key] <= parameter;
+      return value <= parameter;
+    },
+
+    $all: function (item, key, subset) {
+      var set = item[key];
+      if (!Array.isArray(set))
+        return false;
+
+      return subset.every(function(item) {
+        return set.indexOf(item) !== -1;
+      });
+    },
+
+    '$in': function (item, key, values) {
+      var valueArray = item[key];
+      if (!Array.isArray(valueArray))
+        valueArray = [valueArray];
+
+      return valueArray.some(function(value){
+        return values.indexOf(value) !== -1;
+      });
     }
   }
 
