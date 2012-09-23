@@ -70,7 +70,11 @@ var ask = (function(undefined) {
   // Return the type of the specification. Possible types are:
   //  + value
   //  + specification
-  function _getSpecMode(spec) {
+  function _getSpecMode(key, spec) {
+
+    // key can be a boolean operator itself
+    if (key[0] === '$')
+      return key;
 
     // null is a value more than an object
     if (typeof spec !== 'object' || spec === null)
@@ -172,6 +176,32 @@ var ask = (function(undefined) {
     '127': false
   };
 
+  // Some reusable functions
+  function _valueEquality(item, key, value) {
+    if (Array.isArray(item[key]))
+      return item[key].indexOf(value) !== -1;
+
+    return (value === null && !(key in item)) || (value === item[key]);
+  }
+
+  // General handler for binary comparators
+  function _binaryComparator(item, key, parameter, comparator) {
+    var valueArray = item[key];
+    if (!Array.isArray(valueArray))
+      valueArray = [valueArray];
+
+    var value;
+    for (var i = 0, len = valueArray.length; i < len; i++) {
+      value = valueArray[i];
+      if (typeof value !== typeof parameter)
+        continue;
+
+      if (comparator(value, parameter))
+        return true;
+    }
+    return false;
+  }
+
   // Collection of tests by type of specification
   var TESTS = {
 
@@ -204,35 +234,27 @@ var ask = (function(undefined) {
     },
 
     $gt: function (item, key, parameter) {
-      var value = item[key];
-      if (typeof value !== typeof parameter)
-        return false;
-
-      return value > parameter;
+      return _binaryComparator(item, key, parameter, function(v, p) {
+        return v > p;
+      });
     },
 
     $gte: function (item, key, parameter) {
-      var value = item[key];
-      if (typeof value !== typeof parameter)
-        return false;
-
-      return value >= parameter;
+      return _binaryComparator(item, key, parameter, function(v, p) {
+        return v >= p;
+      });
     },
 
     $lt: function (item, key, parameter) {
-      var value = item[key];
-      if (typeof value !== typeof parameter)
-        return false;
-
-      return value < parameter;
+      return _binaryComparator(item, key, parameter, function(v, p) {
+        return v < p;
+      });
     },
 
     $lte: function (item, key, parameter) {
-      var value = item[key];
-      if (typeof value !== typeof parameter)
-        return false;
-
-      return value <= parameter;
+      return _binaryComparator(item, key, parameter, function(v, p) {
+        return v <= p;
+      });
     },
 
     $all: function (item, key, subset) {
@@ -253,16 +275,34 @@ var ask = (function(undefined) {
       return valueArray.some(function(value){
         return values.indexOf(value) !== -1;
       });
+    },
+
+    $mod: function (item, key, parameter) {
+      if (!Array.isArray(parameter))
+        throw new BadArgument('$mod', parameter + ' expected to be an array ' +
+                                       'of at least one element.');
+      var divider = parameter[0];
+      var remainder = parameter[1] || 0;
+      var value = item[key];
+      return typeof value === 'number' && (value % divider === remainder);
+    },
+
+    $ne: function (item, key, value) {
+      return !_valueEquality(item, key, value);
+    },
+
+    $nin: function (item, key, parameter) {
+      return !TESTS['$in'](item, key, parameter);
+    },
+
+    $size: function (item, key, parameter) {
+      var array = item[key];
+      return Array.isArray(array) && (array.length === parameter);
     }
   }
 
   var MODES = {
-    value: function (item, key, value) {
-      if (Array.isArray(item[key]))
-        return item[key].indexOf(value) !== -1;
-
-      return (value === null && !(key in item)) || (value === item[key]);
-    },
+    value: _valueEquality,
 
     specification: function (item, key, spec) {
       for (var operator in spec) {
@@ -275,34 +315,80 @@ var ask = (function(undefined) {
           return false;
       }
       return true;
+    },
+
+    $and: function (item, $and, queries) {
+      if (!Array.isArray(queries) || !queries.length)
+        throw new BadArgument(
+          '$and',
+          'expression must be a nonempty array of queries'
+        );
+
+      return queries.every(function (query) {
+        return _passQuery(item, query);
+      });
+    },
+
+    $or: function (item, key, queries) {
+      if (!Array.isArray(queries) || !queries.length)
+        throw new BadArgument(
+          '$or',
+          'expression must be a nonempty array of queries'
+        );
+
+      return queries.some(function (query) {
+        return _passQuery(item, query);
+      });
+    },
+
+    $nor: function (item, key, queries) {
+      if (!Array.isArray(queries) || !queries.length)
+        throw new BadArgument(
+          '$nor',
+          'expression must be a nonempty array of queries'
+        );
+
+      return !queries.some(function (query) {
+        return _passQuery(item, query);
+      });
     }
+
 
   };
 
-  // General method to test objects.
-  // Determining the type of the spec we can select the proper test.
-  function _pass(item, key, spec) {
-    var mode = _getSpecMode(spec);
+  // Test a restriction. Restrictions can be:
+  // + value restricted {key: value}
+  // + expression {key: { $operator: expression}}
+  // + boolean expression { $and: [ subqueries ]} / { $or: [ subqueries ]}
+  function _passRestriction(item, key, spec) {
+    var mode = _getSpecMode(key, spec);
     var handler = MODES[mode];
     if (typeof handler !== 'function')
-      throw new AskException('Specification "' + JSON.stringify(spec) +
-                               '" not supported');
+      throw new AskException('Specification "' + key + ':' + 
+                              JSON.stringify(spec) + '" not supported');
 
     return handler(item, key, spec);
+  }
+
+  // Test every restriction
+  function _passQuery(item, query) {
+    for (var key in query)
+      if(!_passRestriction(item, key, query[key]))
+        return false;
+
+    return true;
   }
 
   // Point of entry for Mongo queries
   function _find(queryObj) {
     queryObj = _normalizeQueryObject(queryObj)
-    var $query = queryObj.$query;
+    var query = queryObj.$query;
     var result = ask.mongify([]);
 
-    [].forEach.call(this, function _testEach(item) {
-      for (var key in $query)
-        if(!_pass(item, key, $query[key]))
-          return;
+    [].forEach.call(this, function (item) {
+      if (_passQuery(item, query))
+        result.push(item);
 
-      result.push(item);
     });
     return result;
   }

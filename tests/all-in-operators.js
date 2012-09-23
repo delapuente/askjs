@@ -23,7 +23,7 @@ describe('operators $all and $in:', function() {
         { set: [1, 2, 3] },
         { set: [1, 2, 3, 4, 5] },
         { set: [1, 2] },
-        { set: '[1, 2, 3]' } // this is not an array
+        { set: '[1, 2, 3]' } 
       ];
       ask.mongify(C);
 
@@ -52,6 +52,25 @@ describe('operators $all and $in:', function() {
     }
   );
 
+  it('$nin checks if the key is NOT in the set (actually, an array) passed ' + 
+     'as parameter',
+    function () {
+      var C = [
+        { x: 5 },
+        { color: "red" },
+        { color: "green" },
+        { color: "blue" },
+      ];
+      ask.mongify(C);
+
+      expect(C.find( {color: { '$nin': []}} )).sameCollection(C);
+      expect(C.find( {color: { '$nin': ["red", "green"]}} ))
+      .sameCollectionByItems(C[0], C[3]);
+      expect(C.find( {color: { '$nin': ["blue"]}} ))
+      .sameCollection(C.slice(0, 3));
+    }
+  );
+
   it('if the value is an array, $in checks if some of its items is in the ' +
      'set passed as parameter',
     function () {
@@ -69,6 +88,26 @@ describe('operators $all and $in:', function() {
       .sameCollection(C.slice(2, 4));
       expect(C.find( {color: { '$in': ["blue"]}} ))
       .sameCollectionByItems(C[4]);
+    }
+  );
+
+  it('if the value is an array, $nin checks if NO ONE of its items is in the ' +
+     'set passed as parameter',
+    function () {
+      var C = [
+        { x: 5 },
+        { color: [] },
+        { color: ["red", "green"] },
+        { color: ["green", "red"] },
+        { color: ["blue", "yellow"] }
+      ];
+      ask.mongify(C);
+
+      expect(C.find( {color: { '$nin': []}} )).sameCollection(C);
+      expect(C.find( {color: { '$nin': ["red", "green"]}} ))
+      .sameCollectionByItems(C[0], C[1], C[4]);
+      expect(C.find( {color: { '$nin': ["blue"]}} ))
+      .sameCollection(C.slice(0, 4));
     }
   );
 });

@@ -18,13 +18,18 @@ ask.mongify(collection); // it returns the same collection object
 collection.find( { z: false } );
 ```
 
-At the moment, very basic features are supported:
+## Features supported
+
+At the moment, almost all operators are supported but no indexation is applied on any search:
 
   + `{ key: value }` with simple values. See [Mongo reference about query language](http://www.mongodb.org/display/DOCS/Mongo+Query+Language).
   + `{ key: null }` where `null` means both checking for [equality or non existence](http://www.mongodb.org/display/DOCS/Querying+and+nulls).
   + `$gt`, `$gte`, `$lt`, `$lte` operators. See [Mongo reference about <, <=, >, >=](http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%3C%2C%3C%3D%2C%3E%2C%3E%3D) operators.
-  + `$all` and `$in` operators. See [Mongo reference about `all`](http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24all) and [documentation about `in`](http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24in) for further details
+  + `$all` and `$in` operators. See [Mongo reference about `$all`](http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24all) and [documentation about `in`](http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24in) for further details
   + `$exists` operator. See [Mongo reference about $exists](http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24exists) operator.
+  + `$mod` operator. See [Mongo reference about `$mod`](See [Mongo reference about `$all`](http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24all) and [documentation about `in`](http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24in) for further details) for further details. If you omit the remainder parameter, it is assumed to be 0.
+  + `$ne` and `$nin` operators. See [Mongo reference about `$ne`](http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24ne) and [`$nin operators`](http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24nin).
+  + `$size` operator. See [Mongo reference about $size](http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24size) operator.
   + `$type` operator. See [Mongo table about datatypes](http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24type) and [Mongo reference about types](http://www.mongodb.org/display/DOCS/Data+Types+and+Conventions) and, **please, please, please**, read the follwing notes:
 
      I have solid support for types **1 (double), 2 (string), 3 (object), 4 (array), 8 (boolean), 9 (date), 10 (null), 11 (regular expression), 13 (JavaScript code), 15 (JavaScript code with scope), 16 (32-bit integer), 18 (64-bit ~ 53-bit integer)**
@@ -71,3 +76,5 @@ At the moment, very basic features are supported:
     // This reset type tests to default ones
     ask.types();
     ```
+
+  + `$and`, `$or` and `$nor` operators. See from [Mongo `$nor` documentation](http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24nor).

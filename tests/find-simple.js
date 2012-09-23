@@ -53,10 +53,21 @@ describe('find() -- simple usage:', function() {
     expect(result).sameCollection(C.slice(0, 3));
   });
 
+  it('accepts $ne operator which means `not equal`', function() {
+    var result = C.find({z: {$ne: true}});
+    expect(result).sameCollection(C.slice(3, 7));
+  });
+
   it('in value restricted specs, when key is an array, the search check all ' +
      'values within the array', function() {
     var result = C.find({ color: "red" });
     expect(result).sameCollection(C.slice(5, 7));
+  });
+
+  it('using $ne, when key is an array, the search checks that no ' +
+     'value within the array matches the query', function() {
+    var result = C.find({ color: {$ne: "red"} });
+    expect(result).sameCollection(C.slice(0, 5));
   });
 
   it('in value restricted specs, looking for null inlcudes those objects ' +
@@ -99,6 +110,14 @@ describe('find() -- simple usage:', function() {
        result2 = C.find({ y: { $exists: 0 } });
        expect(result).sameCollection(C.slice(0, 4));
        expect(result2).sameCollection(C.slice(4));
+     }
+  );
+
+  it('accepts the operator $size with a number to check length of arrays',
+     function () {
+       expect(C.find({ color: { $size: 3 } })).sameCollectionByItems(C[6]);
+       expect(C.find({ color: { $size: 1 } })).sameCollection([]);
+       expect(C.find({ x: { $size: 1 } })).sameCollection([]);
      }
   );
 
