@@ -26,6 +26,63 @@ var ask = (function(undefined) {
   }
   NotSupported.prototype = new AskException();
 
+  // Resolves key in dot notation for the given item.
+  function _(item, key) {
+
+    // Auxiliar function to determine if we are looking for some value in any
+    // position of the array.
+    function lookingInAllTheArray(key, field) {
+      var isNumber = !isNaN(Number(key));
+      return Array.isArray(field) && !isNumber;
+    }
+
+    var path = key.split('.');
+
+    // Actually resolves the dot notation for an object
+    // XXX: Implementation is recursive, see commentaries in the code
+    function __(item, currentKeyIndex) {
+      // Base cases
+      if (item === undefined || currentKeyIndex >= path.length)
+        return item;
+
+      // Normal search, going one level deeper and updating the key
+      var currentKey = path[currentKeyIndex];
+      if (!lookingInAllTheArray(currentKey, item))
+        return __(item[currentKey], currentKeyIndex + 1);
+
+      // Complex search, looking inside the objects of an array
+      // XXX: This is like returning a "multiplexed value". Lets consider
+      // a "multiplexed value" like a marked array.
+      var arrayValue = [];
+      arrayValue.$__isMultiplexedValue = true;
+      for (var i = 0, subitem; subitem = item[i]; i++) {
+
+        // Perform a search with the current key on every subitem
+        var value = __(subitem, currentKeyIndex);
+
+        // If value is a "multiplexed value", concatenate to the current one
+        if (value !== undefined && value.$__isMultiplexedValue)
+          for (var j = 0, len = value.length; j < len; j++)
+            arrayValue.push(value[j]);
+
+        // If value is not an array or it is a normal array, simply add it
+        else if (value !== undefined)
+          arrayValue.push(value);
+
+      }
+
+      // XXX: In any case, undefined is never added to the multiplexed value
+      // An empty "multiplexed value" is like undefined
+      return arrayValue.length ? arrayValue : undefined;
+    }
+
+    var value = __(item, 0);
+    if (value !== undefined && value !== null && value.$__isMultiplexedValue)
+      delete value.$__isMultiplexedValue;
+
+    return value;
+  }
+
   // Check the correct type of a parameter and if so, check the value belongs
   // to a proper set of values too.
   function _assertParameter(operator, parameter, type, values) {
@@ -45,6 +102,8 @@ var ask = (function(undefined) {
       throw new BadArgument(operator, description);
   }
 
+  // Overwrite the fields of obj with those belonging to the following
+  // arguments.
   function _extend(obj) {
     for (var i = 1, current; current = arguments[i]; i++)
       for (var key in current) if (current.hasOwnProperty(key))
@@ -68,9 +127,18 @@ var ask = (function(undefined) {
   }
 
   // Return the type of the specification. Possible types are:
+  //  + boolean $and, $or, $nor
   //  + value
+  //  + object (to compare complete subobjects)
   //  + specification
   function _getSpecMode(key, spec) {
+
+    function isExpression(spec) {
+      var keys = Object.keys(spec);
+      return keys.every(function(key) {
+        return key[0] === '$';
+      });
+    }
 
     // key can be a boolean operator itself
     if (key[0] === '$')
@@ -80,7 +148,11 @@ var ask = (function(undefined) {
     if (typeof spec !== 'object' || spec === null)
       return 'value';
 
-    return 'specification';
+    // complete subobject match
+    if (!isExpression(spec))
+      return 'subobject';
+
+    return 'expression';
   }
 
   // Collection of types
@@ -178,15 +250,16 @@ var ask = (function(undefined) {
 
   // Some reusable functions
   function _valueEquality(item, key, value) {
-    if (Array.isArray(item[key]))
-      return item[key].indexOf(value) !== -1;
+    var field = _(item, key);
+    if (Array.isArray(field))
+      return field.indexOf(value) !== -1;
 
-    return (value === null && !(key in item)) || (value === item[key]);
+    return (value === null && !(key in item)) || (value === field);
   }
 
   // General handler for binary comparators
   function _binaryComparator(item, key, parameter, comparator) {
-    var valueArray = item[key];
+    var valueArray = _(item, key);
     if (!Array.isArray(valueArray))
       valueArray = [valueArray];
 
@@ -215,7 +288,7 @@ var ask = (function(undefined) {
 
       var shouldExist = (parameter === true);
       return shouldExist ?
-              item[key] !== undefined : item[key] === undefined;
+              _(item, key) !== undefined : _(item, key) === undefined;
     },
 
     $type: function (item, key, parameter) {
@@ -229,7 +302,7 @@ var ask = (function(undefined) {
         );
 
       else if (typeof typetest === 'function') {
-        return typetest(item[key]);
+        return typetest(_(item, key));
       }
     },
 
@@ -258,7 +331,7 @@ var ask = (function(undefined) {
     },
 
     $all: function (item, key, subset) {
-      var set = item[key];
+      var set = _(item, key);
       if (!Array.isArray(set))
         return false;
 
@@ -268,7 +341,7 @@ var ask = (function(undefined) {
     },
 
     '$in': function (item, key, values) {
-      var valueArray = item[key];
+      var valueArray = _(item, key);
       if (!Array.isArray(valueArray))
         valueArray = [valueArray];
 
@@ -277,14 +350,20 @@ var ask = (function(undefined) {
       });
     },
 
+    // TODO: Check if this work on arrays
     $mod: function (item, key, parameter) {
       if (!Array.isArray(parameter))
         throw new BadArgument('$mod', parameter + ' expected to be an array ' +
                                        'of at least one element.');
       var divider = parameter[0];
       var remainder = parameter[1] || 0;
-      var value = item[key];
-      return typeof value === 'number' && (value % divider === remainder);
+      var valueArray = _(item, key);
+      if (!Array.isArray(valueArray))
+        valueArray = [valueArray];
+
+      return valueArray.some(function(value) {
+        return typeof value === 'number' && (value % divider === remainder);
+      });
     },
 
     $ne: function (item, key, value) {
@@ -296,28 +375,48 @@ var ask = (function(undefined) {
     },
 
     $size: function (item, key, parameter) {
-      var array = item[key];
+      var array = _(item, key);
       return Array.isArray(array) && (array.length === parameter);
+    },
+
+    $not: function (item, key, expression) {
+      return !_solveExpression(item, key, expression);
     }
+  }
+
+  function _solveExpression(item, key, expression) {
+    for (var operator in expression) {
+      var test = TESTS[operator];
+      if (typeof test !== 'function')
+        throw new AskException('Operator "' + operator + '" not (yet)' +
+                                ' supported');
+
+      if (!test(item, key, expression[operator]))
+        return false;
+    }
+    return true;
+  }
+
+  function _compareObjects(objA, objB) {
+    return JSON.stringify(objA) === JSON.stringify(objB);
   }
 
   var MODES = {
     value: _valueEquality,
 
-    specification: function (item, key, spec) {
-      for (var operator in spec) {
-        var test = TESTS[operator];
-        if (typeof test !== 'function')
-          throw new AskException('Operator "' + operator + '" not (yet)' +
-                                  ' supported');
+    expression: _solveExpression,
 
-        if (!test(item, key, spec[operator]))
-          return false;
-      }
-      return true;
+    subobject: function (item, key, referenceObject) {
+      var obj = _(item, key);
+      return _compareObjects(obj, referenceObject);
     },
 
-    $and: function (item, $and, queries) {
+    // XXX: this is here to force same results as Mongo. But documentation
+    // says that this syntax is not valid:
+    // http://docs.mongodb.org/manual/reference/operators/#_S_not
+    $not: function () { return false; },
+
+    $and: function (item, key, queries) {
       if (!Array.isArray(queries) || !queries.length)
         throw new BadArgument(
           '$and',
@@ -348,11 +447,8 @@ var ask = (function(undefined) {
           'expression must be a nonempty array of queries'
         );
 
-      return !queries.some(function (query) {
-        return _passQuery(item, query);
-      });
+      return !MODES['$or'](item, key, queries);
     }
-
 
   };
 
@@ -361,7 +457,7 @@ var ask = (function(undefined) {
   // + expression {key: { $operator: expression}}
   // + boolean expression { $and: [ subqueries ]} / { $or: [ subqueries ]}
   function _passRestriction(item, key, spec) {
-    var mode = _getSpecMode(key, spec);
+    var mode = _getSpecMode(key, spec, item);
     var handler = MODES[mode];
     if (typeof handler !== 'function')
       throw new AskException('Specification "' + key + ':' + 

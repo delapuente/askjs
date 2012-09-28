@@ -20,6 +20,16 @@ collection.find( { z: false } );
 
 ## Features supported
 
+### Dot notation & subobjects
+
+All stuff related to `key.dot.notation` is supported according to Mongo specification.
+
+You can find [more information in Mongo documentation](http://www.mongodb.org/display/DOCS/Dot+Notation+(Reaching+into+Objects)).
+
+It still lacks for `$elemeMatch` but I'm planning to add it for the next week.
+
+### Operators
+
 At the moment, almost all operators are supported but no indexation is applied on any search:
 
   + `{ key: value }` with simple values. See [Mongo reference about query language](http://www.mongodb.org/display/DOCS/Mongo+Query+Language).
@@ -78,3 +88,4 @@ At the moment, almost all operators are supported but no indexation is applied o
     ```
 
   + `$and`, `$or` and `$nor` operators. See from [Mongo `$nor` documentation](http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-%24nor).
+  + `$not` metaoperator. See [Mongo `$not` metaoperator notes](http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-Metaoperator%3A%7B%7B%24not%7D%7D). 
