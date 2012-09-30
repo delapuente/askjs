@@ -22,11 +22,9 @@ collection.find( { z: false } );
 
 ### Dot notation & subobjects
 
-All stuff related to `key.dot.notation` is supported according to Mongo specification.
+**All stuff** related to __dot notation__, `$elemMatch` and __subobjects__ is supported according to Mongo specification.
 
 You can find [more information in Mongo documentation](http://www.mongodb.org/display/DOCS/Dot+Notation+(Reaching+into+Objects)).
-
-It still lacks for `$elemeMatch` but I'm planning to add it for the next week.
 
 ### Operators
 

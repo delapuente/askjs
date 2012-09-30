@@ -126,19 +126,19 @@ var ask = (function(undefined) {
     return queryObj;
   }
 
+  function _isExpression(spec) {
+    var keys = Object.keys(spec);
+    return keys.every(function(key) {
+      return key[0] === '$';
+    });
+  }
+
   // Return the type of the specification. Possible types are:
   //  + boolean $and, $or, $nor
   //  + value
   //  + object (to compare complete subobjects)
   //  + specification
   function _getSpecMode(key, spec) {
-
-    function isExpression(spec) {
-      var keys = Object.keys(spec);
-      return keys.every(function(key) {
-        return key[0] === '$';
-      });
-    }
 
     // key can be a boolean operator itself
     if (key[0] === '$')
@@ -149,7 +149,7 @@ var ask = (function(undefined) {
       return 'value';
 
     // complete subobject match
-    if (!isExpression(spec))
+    if (!_isExpression(spec))
       return 'subobject';
 
     return 'expression';
@@ -381,6 +381,24 @@ var ask = (function(undefined) {
 
     $not: function (item, key, expression) {
       return !_solveExpression(item, key, expression);
+    },
+
+    $elemMatch: function (item, key, specification) {
+      var array = _(item, key);
+      if (!Array.isArray(array))
+        return false;
+
+      // Test expression for each array item
+      if (_isExpression(specification)) {
+        return array.every(function (arrayItem, index) {
+          return _solveExpression(array, index+'', specification);
+        });
+      }
+
+      // Test some object to match specification
+      return array.some(function (arrayItem) {
+        return _passQuery(arrayItem, specification);
+      });
     }
   }
 
@@ -467,7 +485,7 @@ var ask = (function(undefined) {
   }
 
   // Test every restriction
-  function _passQuery(item, query) {
+  function _passQuery(item, query, elemMatchKey) {
     for (var key in query)
       if(!_passRestriction(item, key, query[key]))
         return false;

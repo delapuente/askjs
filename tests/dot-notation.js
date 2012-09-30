@@ -16,7 +16,7 @@ describe('dot notation', function() {
 
   });
 
-  xit('lets the user to match nested objects',
+  it('lets the user to match nested objects',
     function () {
       var C = [
         { name: 'Ann', address: { city: "San Francisco", state: "CA" } },
