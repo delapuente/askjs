@@ -24,7 +24,7 @@ collection.find( { z: false } );
 
 **All stuff** related to __dot notation__, `$elemMatch` and __subobjects__ is supported according to Mongo specification.
 
-You can find [more information in Mongo documentation](http://www.mongodb.org/display/DOCS/Dot+Notation+(Reaching+into+Objects)).
+You can find [more information in Mongo documentation](http://www.mongodb.org/display/DOCS/Dot+Notation+(Reaching+into+Objects).
 
 ### Operators
 
