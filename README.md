@@ -26,6 +26,10 @@ collection.find( { z: false } );
 
 You can find [more information in Mongo documentation](http://www.mongodb.org/display/DOCS/Dot+Notation+(Reaching+into+Objects).
 
+### JavaScript and $where clause
+
+You can use JavaScript expressions and the `$where` clause as it is described in [Mongo documentation about `$where`](http://www.mongodb.org/display/DOCS/Advanced+Queries#AdvancedQueries-JavascriptExpressionsand%7B%7B%24where%7D%7D)
+
 ### Operators
 
 At the moment, almost all operators are supported but no indexation is applied on any search:
