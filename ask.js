@@ -128,8 +128,20 @@ var ask = (function(undefined) {
   // See:
   //  http://www.mongodb.org/display/DOCS/Mongo+Query+Language
   function _normalizeQueryObject(queryObj) {
-    if (typeof queryObj !== 'object')
-      return null;
+
+    if (typeof queryObj === 'string' || typeof queryObj === 'function')
+      return {
+        $query: {
+          $where: queryObj
+        }
+      };
+
+    var type = typeof queryObj;
+    if (type !== 'object')
+      throw new AskException(
+        'Invalid query syntax',
+        'don\'t know how to massage : ' + type
+      );
 
     if (typeof queryObj.$query === 'undefined')
       return {
@@ -479,7 +491,26 @@ var ask = (function(undefined) {
         );
 
       return !MODES['$or'](item, key, queries);
+    },
+
+    $where: function (item, key, specification) {
+      var filterFunction;
+
+      // If a function is provided, use that
+      if (typeof specification === 'function')
+        filterFunction = specification;
+
+      // If not, make a new one
+      else if (typeof specification === 'string')
+        filterFunction = new Function('return ' + specification + ';');
+
+      // Other types does not trigger an error but filter everything
+      else
+        return false;
+
+      return filterFunction.apply(item);
     }
+
 
   };
 
@@ -508,7 +539,8 @@ var ask = (function(undefined) {
 
   // Point of entry for Mongo queries
   function _find(queryObj) {
-    queryObj = _normalizeQueryObject(queryObj)
+    queryObj = _normalizeQueryObject(queryObj);
+
     var query = queryObj.$query;
     var result = ask.mongify([]);
 
@@ -520,7 +552,7 @@ var ask = (function(undefined) {
     return result;
   }
 
-  // Enables an array like object to perform Mongo queries on it
+  // Enables an array-like object to perform Mongo queries on it
   function _mongify(arraylike) {
     arraylike.find = _find;
     return arraylike;
