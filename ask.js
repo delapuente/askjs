@@ -592,7 +592,7 @@ var ask = (function(undefined) {
   _types();
 
   return {
-    version: function () { return SEMVER; };
+    version: function () { return SEMVER; },
     mongify: _mongify,
     types: _types
   }

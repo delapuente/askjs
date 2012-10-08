@@ -2,7 +2,14 @@
 
 Perform [mongo queries](http://www.mongodb.org/display/DOCS/Querying) on regular JS objects.
 
+## Compatibility
+
+`ask.js` is compatible with the ECMAScript 5.1 standard, for retrocompatibility take advantage of [modernizr and polyfills](https://github.com/Modernizr/Modernizr/wiki/HTML5-Cross-Browser-Polyfills).
+
+Tests have been passed for both latest Chrome and Firefox 15.0.1.
+
 ## How to use?
+
 
 Add `ask.js` to your page and use `ask.mongify()` method to convert an array into a mongified collection. ;)
 
