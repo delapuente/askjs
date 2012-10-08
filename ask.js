@@ -164,7 +164,6 @@ var ask = (function(undefined) {
   //  + object (to compare complete subobjects)
   //  + specification
   function _getSpecMode(key, spec) {
-
     // key can be a boolean operator itself
     if (key[0] === '$')
       return key;
@@ -172,6 +171,10 @@ var ask = (function(undefined) {
     // null is a value more than an object
     if (typeof spec !== 'object' || spec === null)
       return 'value';
+
+    // matching against regex
+    if (spec instanceof RegExp)
+      return 'regex';
 
     // complete subobject match
     if (!_isExpression(spec))
@@ -424,6 +427,18 @@ var ask = (function(undefined) {
       return array.some(function (arrayItem) {
         return _passQuery(arrayItem, specification);
       });
+    },
+
+    $options: function (item, key, specification) {
+      return true; // no effect
+    },
+
+    $regex: function (item, key, regex, expression) {
+      if (!(regex instanceof RegExp)) {
+        var options = expression['$options'];
+        regex = new RegExp(regex, options || '');
+      }
+      return !!regex.exec(_(item, key));
     }
   }
 
@@ -434,7 +449,7 @@ var ask = (function(undefined) {
         throw new AskException('Operator "' + operator + '" not (yet)' +
                                 ' supported');
 
-      if (!test(item, key, expression[operator]))
+      if (!test(item, key, expression[operator], expression))
         return false;
     }
     return true;
@@ -445,6 +460,10 @@ var ask = (function(undefined) {
   }
 
   var MODES = {
+    regex: function (item, key, regex) {
+      return !!regex.exec(_(item, key));
+    },
+
     value: _valueEquality,
 
     expression: _solveExpression,
@@ -518,6 +537,7 @@ var ask = (function(undefined) {
   // + value restricted {key: value}
   // + expression {key: { $operator: expression}}
   // + boolean expression { $and: [ subqueries ]} / { $or: [ subqueries ]}
+  // + where clause { $where: <JavaScript expression> }
   function _passRestriction(item, key, spec) {
     var mode = _getSpecMode(key, spec, item);
     var handler = MODES[mode];
