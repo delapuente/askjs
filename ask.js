@@ -1,5 +1,5 @@
 /*
-Copyright 2012
+Copyright 2012 - http://unoyunodiez.com - Salvador de la Puente González
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -13,9 +13,14 @@ The above copyright notice and this permission notice shall be
 included in all copies or substantial portions of the Software.
 */
 
+/*
+ask module. Initial release 1.0.0-alpha.1
+*/
 var ask = (function(undefined) {
 
   'use strict'
+
+  var SEMVER = '1.0.0-alpha.1';
 
   var MAX_INT32 = 4294967296; // 2^32
   var MAX_INT52 = 9007199254740992; // 2^52
@@ -587,6 +592,7 @@ var ask = (function(undefined) {
   _types();
 
   return {
+    version: function () { return SEMVER; };
     mongify: _mongify,
     types: _types
   }
