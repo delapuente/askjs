@@ -15,14 +15,16 @@ Add `ask.js` to your page and use `ask.mongify()` method to convert an array int
 
 ```javascript
 var collection = [
-  { x: 1, y: 1, z: true },
-  { x: 2, y: "string", z: true },
-  { x: 3, y: null, z: false },
-  { x: 4, z: false }
+  {"city": "ACMAR", "loc": [-86.51557, 33.584132], "pop": 6055, "state": "AL", "_id": "35004"},
+  {"city": "ADAMSVILLE", "loc": [-86.959727, 33.588437], "pop": 10616, "state": "AL", "_id": "35005"},
+  {"city": "NINILCHIK", "loc": [-151.639604, 60.010833], "pop": 767, "state": "AK", "_id": "99639"},
+  {"city": "NONDALTON", "loc": [-154.731675, 60.030837], "pop": 233, "state": "AK", "_id": "99640"},
+  {"city": "LAKESIDE", "loc": [-109.986878, 34.166224], "pop": 5350, "state": "AZ", "_id": "85929"},
+  {"city": "PINETOP", "loc": [-109.919668, 34.117459], "pop": 1938, "state": "AZ", "_id": "85935"}
 ];
 ask.mongify(collection); // it returns the same collection object
 
-collection.find( { z: false } );
+collection.find( { "state": "AK" } );
 ```
 
 ## Features supported
